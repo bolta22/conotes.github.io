@@ -1,3 +1,10 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://eprgyheskouunjqscric.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwcmd5aGVza291dW5qcXNjcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUxNTkzNDMsImV4cCI6MjAzMDczNTM0M30.rZeO08UGo4x1vOT2BPx1Trn_VjR--MZtMAtt1NqoPiA'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// console.log(supabase)
 
 function addResetButton() {
     var button = document.createElement('button');
@@ -17,16 +24,15 @@ function addResetButton() {
     });
 }
 
-function openPostIt(x, y, content) {
-    // var uniq = 'postIT_' + Date.now() + (Math.random() * 1000);
+window.openPostIt = function(x, y, content) {
+    var notee;
     var uniq = 'postIT_' + x + "_" + y;
-    // var currentNote = '';
 
     var square = document.createElement('div');
     square.style.width = '85px';
     square.style.height = '90px';
     square.setAttribute("id", "postIT");
-    square.style.backgroundColor = getRandomColor();
+    // square.style.backgroundColor = getRandomColor();
     square.style.border = '1px grey solid';
     square.style.position = 'absolute';
     square.style.left = 4 + x + 'px';
@@ -51,21 +57,6 @@ function openPostIt(x, y, content) {
     button.style.top = 80 + y + "px";
     button.textContent = "post";
     button.style.marginTop = "10px";
-
-    // var textline = document.createElement("div");
-    // textline.style.position = "absolute";
-    // textline.style.left = 5 + x + "px";
-    // textline.style.top = 5 + y + "px";
-    // textline.style.width = "80px";
-    // textline.style.height = "105px";
-    // // textline.style.backgroundColor = "grey";
-    // textline.style.width = "80px";
-    // textline.style.height = "105px";
-
-    // textline.style.overflow = "auto";
-    // textline.style.whiteSpace = "nowrap";
-    // // textline.textContent = currentNote;
-    // textline.textContent = localStorage.getItem(uniq);
 
     var pin = document.createElement("div");
     pin.style.position = "absolute";
@@ -93,6 +84,7 @@ function openPostIt(x, y, content) {
 
     textBox.addEventListener("change", function() {
         var inputValue = textBox.value.toLowerCase();
+        notee = textBox.value;
         if (inputValue === "clear all notes") {
             localStorage.clear();
             console.log("Local Storage cleared.");
@@ -114,26 +106,35 @@ function openPostIt(x, y, content) {
         textline.style.height = "80px";
         textline.style.overflow = "auto";
         textline.style.whiteSpace = "nowrap";
-        textline.textContent = localStorage.getItem(uniq);
+        // textline.textContent = localStorage.getItem(uniq);
+        saveNote();
 
         document.body.removeChild(container);
         document.body.removeChild(button);
         document.body.appendChild(square);
         document.body.appendChild(textline);
         document.body.appendChild(pin);
-
-        // var postedNote = localStorage.getItem('textinput');
     });
+
+    const saveNote = async () => {
+        const { data, error } = await supabase
+        .from('postits')
+        .insert({
+            x: x,
+            y: y,
+            content: notee
+        })
+    }
 }
 
-function getRandomColor() {
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
+// function getRandomColor() {
+//     var letters = '0123456789ABCDEF';
+//     var color = '#';
+//     for (var i = 0; i < 6; i++) {
+//         color += letters[Math.floor(Math.random() * 16)];
+//     }
+//     return color;
+// }
 
 function savedPostIt(x, y, content) {
     var uniq = 'postIT_' + x + "_" + y;
@@ -142,7 +143,7 @@ function savedPostIt(x, y, content) {
     square.style.width = '85px';
     square.style.height = '90px';
     square.setAttribute("id", "postIT");
-    square.style.backgroundColor = getRandomColor();
+    // square.style.backgroundColor = getRandomColor();
     square.style.border = '1px grey solid';
     square.style.position = 'absolute';
     square.style.left = 4 + x + 'px';
@@ -165,9 +166,11 @@ function savedPostIt(x, y, content) {
     textline.style.top = 5 + y + "px";
     textline.style.width = "75px";
     textline.style.height = "80px";
-    textline.style.overflow = "auto";
-    textline.style.whiteSpace = "nowrap";
-    textline.textContent = localStorage.getItem(uniq);
+    textline.style.overflowX = "auto";
+    textline.style.overflowY = "auto";
+    // textline.style.whiteSpace = "nowrap";
+    // textline.textContent = localStorage.getItem(uniq);
+    textline.textContent = content;
 
     document.body.appendChild(square);
     document.body.appendChild(textline);
@@ -177,12 +180,31 @@ function savedPostIt(x, y, content) {
 function displaySavedNotes() {
     for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
-        if (key.startsWith("postIT_")) {
-            var noteContent = localStorage.getItem(key);
-            var notePosition = key.split("_"); 
-            savedPostIt(parseInt(notePosition[1]), parseInt(notePosition[2]), noteContent);
+        // if (key.startsWith("postIT_")) {
+        //     var noteContent = localStorage.getItem(key);
+        //     var notePosition = key.split("_"); 
+        //     savedPostIt(parseInt(notePosition[1]), parseInt(notePosition[2]), noteContent);
+        // }
+    }
+
+    const fetchPost = async () => {
+        try {
+            let { data: postits, error } = await supabase
+            .from('postits')
+            .select('*')
+
+            if (postits) {
+                console.log(postits)
+                for (i=0; postits.length; i++) {
+                    savedPostIt(postits[i].x, postits[i].y, postits[i].content);
+                }
+            }
+        } catch (error) {
+            console.log(error)
         }
     }
+
+    fetchPost();
 }
 
 displaySavedNotes();
